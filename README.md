@@ -119,7 +119,9 @@ Final testing, documentation, and deployment.
 
 
 
-WEEK 3 
+
+
+WEEK 4
 
 KiddieRemind Backend (KidSync)
 Project Overview
@@ -131,29 +133,27 @@ Django REST Framework (DRF) – For API creation and management.
 Celery & Redis – For background task scheduling (email reminders).
 djangorestframework-simplejwt – For authentication using JWT tokens.
 django-cors-headers – For handling cross-origin requests.
+
+
 Project Structure
-bash
-Copy
-Edit
 My_Capstone_Project/
 │── KiddieRemind/  # Django Project
 │── KidSync/       # Django App for authentication & task management
 │── manage.py      # Django management script
 │── README.md      # Documentation
+
+
 Today's Implementations
 1. Adding Task Categories
 Objective: Categorize tasks into homework, chores, extracurricular activities, etc.
 
 Steps Taken:
-
 Updated the Task model (KidSync/models.py) to include a category field.
 Modified serializers to handle categories.
 Updated views to allow task categorization during creation and updates.
+
 Code Changes:
 
-python
-Copy
-Edit
 class Task(models.Model):
     CATEGORY_CHOICES = [
         ('homework', 'Homework'),
@@ -170,27 +170,23 @@ Why?
 
 Helps users organize tasks efficiently.
 Allows for future filtering and sorting based on task type.
+
+
 2. Implementing Task Reminders via Email
 Objective: Automatically remind users about upcoming tasks via email.
 
 Steps Taken:
-
 Installed Celery and Redis for background task processing:
-bash
-Copy
-Edit
+
 pip install celery redis django-celery-beat
 Configured Celery in KiddieRemind/settings.py:
-python
-Copy
-Edit
+
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+
 Created a Celery task (KidSync/tasks.py) to send email reminders.
-python
-Copy
-Edit
+
 from celery import shared_task
 from django.core.mail import send_mail
 from .models import Task
@@ -207,19 +203,17 @@ def send_task_reminders():
             [task.user.email],
         )
 Scheduled the task to run every day using Celery Beat.
-Why?
-
+WHY?
 Ensures users stay on top of their tasks.
 Reduces missed deadlines and improves task completion.
+
+
 3. Adding Filter, Sort & Search Functionality
 Objective: Improve usability by allowing users to filter, search, and sort tasks.
 
 Steps Taken:
-
 Updated views to support search and filtering (KidSync/views.py):
-python
-Copy
-Edit
+
 from rest_framework import generics, filters
 from .models import Task
 from .serializers import TaskSerializer
@@ -230,26 +224,29 @@ class TaskListView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title']
     ordering_fields = ['due_date']
+
 Filter by Category:
 Users can now retrieve tasks based on category (GET /tasks/list?category=homework).
+
 Search by Title:
 Users can search for specific tasks using keywords (GET /tasks/list?search=math).
+
 Sort by Due Date:
 Tasks can be sorted by deadline (GET /tasks/list?ordering=due_date).
-Why?
 
+WHY?
 Enhances user efficiency in managing tasks.
 Improves UX by allowing easy access to relevant tasks.
 Migrations & Testing
-After making these changes, we applied migrations and tested API endpoints:
+After making these changes, I applied migrations and tested API endpoints:
 
-bash
-Copy
-Edit
+
 python manage.py makemigrations KidSync
 python manage.py migrate
 python manage.py runserver
-Testing Done:
+
+
+Testing Done
 Verified task categories in Postman.
 Ensured email reminders were correctly scheduled and sent.
 Checked filtering, searching, and sorting functionality.
