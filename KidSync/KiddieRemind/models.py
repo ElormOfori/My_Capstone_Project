@@ -39,12 +39,24 @@ class User(AbstractUser):
         return self.email
 
 
+
+# Define choices for task categories
+CATEGORY_CHOICES = [
+    ('homework', 'Homework'),
+    ('chores', 'Chores'),
+    ('activities', 'Activities'),
+    ('reminders', 'Reminders'),
+    ('other', 'Other')
+]
+
 #Define Task Models
+
 class Task(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     due_date = models.DateTimeField()
     is_completed = models.BooleanField(default=False)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tasks")
     created_at = models.DateTimeField(auto_now_add=True)
 
