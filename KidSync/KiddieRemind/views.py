@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework import generics, permissions
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -6,12 +5,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
 from .serializers import UserSerializer, LoginSerializer, TaskSerializer
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from .models import Task
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
+from .models import Task
 
 User = get_user_model()
 
@@ -40,80 +36,66 @@ class LoginView(APIView):
 
 
 
-# Create a Task
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def create_task(request):
-    serializer = TaskSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save(created_by=request.user)  # Link task to logged-in user
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# Task Creation View
+class TaskCreateView(generics.CreateAPIView):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+
+# Retrieve a Single Task
+class TaskDetailView(generics.RetrieveAPIView):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Task.objects.filter(created_by=self.request.user)
 
 # Update a Task
-@api_view(['PUT'])
-@permission_classes([IsAuthenticated])
-def update_task(request, id):
-    try:
-        task = Task.objects.get(id=id, created_by=request.user)
-    except Task.DoesNotExist:
-        return Response({'error': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
+class TaskUpdateView(generics.UpdateAPIView):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    serializer = TaskSerializer(task, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get_queryset(self):
+        return Task.objects.filter(created_by=self.request.user)
 
-#Delete a Task
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
-def delete_task(request, id):
-    try:
-        task = Task.objects.get(id=id, created_by=request.user)
-    except Task.DoesNotExist:
-        return Response({'error': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
+# Delete a Task
+class TaskDeleteView(generics.DestroyAPIView):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    task.delete()
-    return Response({'message': 'Task deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+    def get_queryset(self):
+        return Task.objects.filter(created_by=self.request.user)
 
-# List Tasks
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def list_tasks(request):
-    tasks = Task.objects.filter(created_by=request.user)
-    serializer = TaskSerializer(tasks, many=True)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+# Paginated Task Listing with Filtering, Searching, and Sorting
+class TaskListView(generics.ListAPIView):
+    serializer_class = TaskSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = PageNumberPagination
 
+    def get_queryset(self):
+        tasks = Task.objects.filter(created_by=self.request.user)
 
+        # Filter by Category
+        category = self.request.GET.get('category')
+        if category:
+            tasks = tasks.filter(category=category)
 
+        # Search by Title
+        search = self.request.GET.get('search')
+        if search:
+            tasks = tasks.filter(Q(title__icontains=search))
 
+        # Sort by Due Date
+        sort_by = self.request.GET.get('sort_by', 'due_date')
+        tasks = tasks.order_by(sort_by)
 
+        return tasks
 
-# List Tasks with Filtering, Sorting, and Searching
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def list_tasks(request):
-    tasks = Task.objects.filter(created_by=request.user)
-
-    # Filter by Category
-    category = request.GET.get('category')
-    if category:
-        tasks = tasks.filter(category=category)
-
-    # Search by Title
-    search = request.GET.get('search')
-    if search:
-        tasks = tasks.filter(Q(title__icontains=search))
-
-    # Sort by Due Date
-    sort_by = request.GET.get('sort_by', 'due_date')
-    tasks = tasks.order_by(sort_by)
-
-    # Paginate Results
-    paginator = PageNumberPagination()
-    paginator.page_size = 5
-    result_page = paginator.paginate_queryset(tasks, request)
-    serializer = TaskSerializer(result_page, many=True)
-    
-    return paginator.get_paginated_response(serializer.data)
+ 
