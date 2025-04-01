@@ -10,10 +10,10 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
     # Task Management
-    path('tasks/', TaskCreateView.as_view(), name='task-create'),
+    path('tasks/create', TaskCreateView.as_view(), name='task-create'),
     path('tasks/<int:pk>/', TaskDetailView.as_view(), name='task-detail'),
-    path('tasks/<int:pk>/', TaskUpdateView.as_view(), name='task-update'),
-    path('tasks/<int:pk>/', TaskDeleteView.as_view(), name='task-delete'),
+    path('tasks/update/<int:pk>/', TaskUpdateView.as_view(), name='task-update'),
+    path('tasks/delete<int:pk>/', TaskDeleteView.as_view(), name='task-delete'),
     path('tasks/', TaskListView.as_view(), name='task-list'),
     # Category Management
     path('categories/', CategoryListCreateView.as_view(), name='category-list-create'),
